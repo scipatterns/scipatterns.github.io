@@ -1,0 +1,32 @@
+<div>
+  <span ng-repeat="(sub, sub_packages) in dir_sub" class="btn"
+        ng-class="{'btn-primary':sub==active_sub}"
+        ng-click="active_sub_set(sub)"> {{sub}} </span>
+    <hr>
+</div>
+
+
+<div ng-if="active_sub">
+  <span ng-repeat="(package_name, package) in dir_sub[active_sub]" class="btn"
+        ng-class="{'btn-primary':package_active==package_name}"
+        ng-click="active_package_set(package_name)"> {{package_name}} </span>
+    <hr>
+</div>
+
+
+<div ng-if="package_active">
+  <span ng-repeat="(topic_name,topic) in dir_sub[active_sub][package_active]" class="btn"
+        ng-class="{'btn-primary':topic_active==topic_name}"
+        ng-click="active_topic_set(topic_name)"> {{topic_name}} </span>
+    <hr>
+</div>
+
+<div ng-if="topic_active">
+  <span ng-repeat="(sub_topic,sub_topic_path) in dir_sub[active_sub][package_active][topic_active]" class="btn"
+        ng-class="{'btn-primary':sub_topic_active==sub_topic}"
+        ng-click="active_sub_topic_set(sub_topic)"> {{sub_topic}} </span>
+    <hr>
+</div>
+<div ng-if="sub_topic_active"
+
+        ng-include="dir+'/'+active_sub+'/'+package_active+'/'+dir_sub[active_sub][package_active][topic_active][sub_topic_active]"></div>

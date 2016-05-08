@@ -1,0 +1,9 @@
+  <ul class="nav nav-tabs" role="tablist">
+    <li role="presentation" class="active" ng-click="active_1_set('Home')">
+      <a href="#home" aria-controls="home" role="tab" data-toggle="tab">Home</a></li>
+
+    <li ng-repeat="(dir, dir_sub) in top_dir" role="presentation"
+        ng-click="active_1_set(dir)">
+      <a href="#" role="tab" data-toggle="tab">{{dir}}</a></li>
+
+  </ul>
