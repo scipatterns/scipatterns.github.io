@@ -1,0 +1,726 @@
+<pre>
+# 9.1 Displaying tabular data################################################################################################################
+################################################# Loading a data frame
+
+################################################# Example 9.1: Defining and manipulating an RGtkDataFrame
+data ( Cars93 , package="MASS" ) # mix o f c l a s s e s
+model <- rGtkDataFrame ( Cars93 )
+model [ 1 , 4] <- 12
+model [ 1 , 4] # g e t v a l u e
+#############
+model$setFrame ( Cars93 [ 1 : 5 , 1 : 5 ] )
+################################################# Displaying data as a list or table
+view <- gtkTreeView ( model )
+#######################
+column <- gtkTreeViewColumn ( )
+column$setTitle ( "Manufacturer" )
+cell_renderer <- gtkCellRendererText ( )
+column$packStart ( cell_renderer )
+column$addAttribute ( cell_renderer , "text" , 0)
+view$insertColumn ( column , 0)
+######################
+view$insertColumnWithAttributes ( position = -1,
+                                  title = "Model" ,
+                                  cell = gtkCellRendererText ( ) ,
+                                  text = 2 - 1) # s e c o n d column
+######################
+view <- gtkTreeView ( model )
+mapply ( view$insertColumnWithAttributes ,
+         position = -1,
+         title = colnames ( model ) ,
+         cell = list ( gtkCellRendererText ( ) ) ,
+         text = seq_len ( ncol ( model ) ) - 1
+)
+#######################
+window <- gtkWindow ( )
+window$setTitle ( "Tabular view of data frame" )
+scrolled_window <- gtkScrolledWindow ( )
+window$add ( scrolled_window )
+scrolled_window$add ( view )
+#######################
+
+################################################# Manipulating view columns
+
+################################################# Additional features
+
+################################################# Aesthetic properties
+
+################################################# Accessing GtkTreeModel
+second_row <- gtkTreePathNewFromIndices ( 1 )
+abc_path <- gtkTreePathNewFromIndices ( c ( 0 , 2 , 1 ) )
+abc_path <- gtkTreePathNewFromString ( "0:2:1" )
+################################################# Iterators
+iter <- model$getIterFirst ( )
+manufacturer <- character ( )
+while ( iter$retval ) {
+  manufacturer <- c ( manufacturer , model$get ( iter$iter , 0 ) [[ 1 ]] )
+  iter$retval <- model$iterNext ( iter$iter )
+}
+##########################
+nrows <- model$iterNChildren ( NULL )
+manufacturer <- sapply ( seq ( nrows ) - 1L , function ( i ) {
+  iter <- model$iterNthChild ( NULL , i )
+  model$get ( iter$iter , 0 ) [[ 1 ]]
+} )
+################################################# Converting between paths and iterators
+
+################################################# Selection
+model <- rGtkDataFrame ( mtcars )
+view <- gtkTreeView ( model )
+selection <- view$getSelection ( )
+selection$setMode ( "single" )
+################################
+selected <- selection$getSelected ( )
+with ( selected , model$getValue ( iter , 0) $value )
+##############################
+gSignalConnect ( selection , "changed" , function ( selection ) {
+  selected_rows <- selection$getSelectedRows ( )
+  if ( length ( selected_rows$retval ) ) {
+    rows <- sapply ( selected_rows$retval ,
+                     gtkTreePathGetIndices ) + 1L
+    selected_rows$model [ rows , 1]
+  }
+} )
+#################################
+sapply ( view$getColumns ( ) , function ( i ) i == column )
+################################################# Sorting
+column <- view$getColumn ( 0 )
+column$setSortColumnId ( 0 )
+model$setSortColumnId ( 0 , "ascending" )
+########################
+model <- rGtkDataFrame ( Cars93 )
+sorted_model <- gtkTreeModelSortNewWithModel ( model )
+view <- gtkTreeView ( sorted_model )
+mapply ( view$insertColumnWithAttributes ,
+         position = -1,
+         title = colnames ( model ) ,
+         cell = list ( gtkCellRendererText ( ) ) ,
+         text = seq_len ( ncol ( model ) ) - 1)
+sapply ( seq_len ( ncol ( model ) ) , function ( i )
+  view$getColumn ( i - 1) $setSortColumnId ( i - 1 ) )
+##########################
+f <- function ( model , iter1 , iter2 , user.data ) {
+  types <- c ( "Compact" , "Small" , "Sporty" , "Midsize" ,
+               "Large" , "Van" )
+  column <- user.data
+  val1 <- model$getValue ( iter1 , column ) $value
+  val2 <- model$getValue ( iter2 , column ) $value
+  as.integer ( match ( val1 , types ) - match ( val2 , types ) )
+}
+sorted_model$setSortFunc ( sort.column.id = 3 - 1 , sort.func=f ,
+                           user.data = 3 - 1)
+################################################# Filtering
+DF <- Cars93
+model <- rGtkDataFrame ( cbind ( DF , .vis=rep ( TRUE , nrow ( DF ) ) ) )
+filtered_model <- model$filter ( )
+filtered_model$setVisibleColumn ( length ( DF ) ) # 0???b a s e d
+view <- gtkTreeView ( filtered_model )
+## Adjust f i l t e r
+model [ , ".vis" ] <- DF$MPG.highway >= 30
+################################################# Example 9.2: Using filtering
+DF <- data.frame ( state.name )
+DF$visible <- rep ( TRUE , nrow ( DF ) )
+model <- rGtkDataFrame ( DF )
+#########################
+filtered_model <- model$filter ( )
+filtered_model$setVisibleColumn ( ncol ( DF ) - 1) # o f f s e t
+view <- gtkTreeView ( filtered_model )
+view$insertColumnWithAttributes ( 0 , "Col" ,
+                                  gtkCellRendererText ( ) , text = 0)
+##########################
+entry <- gtkEntry ( )
+gSignalConnect ( entry , "changed" , function ( entry , user.data ) {
+  pattern <- entry$getText ( )
+  DF <- user.data$getModel ( )
+  values <- DF [ , "state.name" ]
+  DF [ , "visible" ] <- grepl ( pattern , values )
+} , data=filtered_model )
+################################################# Cell renderer details
+cell_renderer <- gtkCellRendererText ( )
+cell_renderer [ 'cell -background' ] <- "gray"
+################################################# Text cell renderers
+cell_renderer <- gtkCellRendererText ( )
+cell_renderer [ 'xalign' ] <- 1 # d e f a u l t 0 . 5 = c e n t e r e d
+cell_renderer [ 'family' ] <- "Helvetica"
+################################################# Editable cells
+cell_renderer [ 'editable' ] <- TRUE
+gSignalConnect ( cell_renderer , "edited" ,
+                 f=function ( cell_renderer , path , newtext , user.data ) {
+                   i <- as.numeric ( path ) + 1
+                   j <- user.data$column
+                   model <- user.data$model
+                   model [ i , j ] <- newtext
+                 } , data=list ( model=store , column = 1) )
+################################################# Example 9.3: Using a table to gather arguments
+opts <- c ( "main" , "sub" , "xlab" , "ylab" , "line" , "outer" )
+DF <- data.frame ( option = opts ,
+                     value = c ( "" , "" , "" , "" , "0" , "FALSE" ) ,
+                     class = c ( rep ( "character" , 4 ) , "integer" , "logical" ) ,
+                     edit_color = rep ( "gray95" , 6 ) ,
+                     dirty = rep ( FALSE , 6 ) ,
+                     stringsAsFactors = FALSE )
+#############################
+model <- rGtkDataFrame ( DF )
+view <- gtkTreeView ( model )
+##
+cell_renderer <- gtkCellRendererText ( )
+cell_renderer [ 'background' ] <- 'gray80'
+view$insertColumnWithAttributes ( position = -1,
+                                  title = "Option" ,
+                                  cell = cell_renderer ,
+                                  text = 1 - 1)
+############################
+cell_renderer <- gtkCellRendererText ( )
+cell_renderer [ 'editable' ] <- TRUE
+view$insertColumnWithAttributes ( position = -1,
+                                  title = "Value" ,
+                                  cell = cell_renderer ,
+                                  text = 2 - 1 ,
+                                  background = 4 - 1
+)
+###################################
+gSignalConnect ( cell_renderer , "edited" ,
+                 function ( cell_renderer , path , new.text , user.data ) {
+                   model <- user.data$model
+                   i <- as.numeric ( path ) + 1 ; j <- user.data$column
+                   val <- as ( new.text , model [ i , 'class' ] )
+                   model [ i , j ] <- as ( val , "character" )
+                   model [ i , 'dirty' ] <- TRUE # mark d i r t y
+                   model [ i , 'edit_color' ] <- 'gray70' # change c o l o r
+                 } , data=list ( model=model , column = 2) )
+window <- gtkWindow ( show=FALSE )
+window [ 'title' ] <- "Option editor"
+window$setSizeRequest ( 300 , 500 )
+scrolled_window <- gtkScrolledWindow ( )
+window$add ( scrolled_window )
+scrolled_window$add ( view )
+window$show ( )
+
+################################################# Tooltips
+require ( helpr , quietly=TRUE )
+package <- "graphics" ; topic <- "title"
+rd <- helpr:::parse_help ( helpr:::pkg_topic ( package , topic ) ,
+                               package = package )
+descs <- rd$params$args
+names ( descs ) <- sapply ( descs , function ( i ) i$param )
+#############################
+view [ "has-tooltip" ] <- TRUE
+gSignalConnect ( view , "query-tooltip" ,
+                 function ( view , x , y , key_mode , tooltip , user.data ) {
+                   out <- view$getTooltipContext ( x , y , key_mode )
+                   if ( out$retval ) {
+                     model <- view$getModel ( )
+                     i <- as.numeric ( out$path$toString ( ) ) + 1
+                     val <- model [ i , "option" ]
+                     txt <- descs [[ val ]] $desc
+                     txt <- gsub ( "code >" , "b>" , txt ) # no c o d e in Pango
+                     tooltip$setMarkup ( txt )
+                   }
+                   out$retval
+                 } )
+################################################# Combo and spin cell renderers
+cell_renderer <- gtkCellRendererCombo ( )
+model <- rGtkDataFrame ( state.name )
+cell_renderer [ 'model' ] <- model
+cell_renderer [ 'text-column' ] <- 0
+cell_renderer [ 'editable' ] <- TRUE
+################################################# Pixbuf cell renderers
+
+################################################# Example 9.4: A variable selection widget
+DF <- get ( data ( Cars93 , package="MASS" ) )
+
+make_icon_pixmap <- function ( x , ... ) {
+  require ( grid ) ; require ( cairoDevice )
+  pixmap <- gdkPixmap ( drawable = NULL , width = 16 , height =16 ,
+                        depth = 24)
+  asCairoDevice ( pixmap )
+  grid.newpage ( )
+  grid.draw ( make_icon ( x ) )
+  dev.off ( )
+  gdkPixbufGetFromDrawable ( NULL , pixmap , NULL , 0 ,0 ,0 ,0 , -1 , -1)
+}
+#######################
+model_df <- data.frame ( Variables = I ( sort ( names ( DF ) ) ) ,
+                           icon = I ( sapply ( DF , make_icon_pixmap ) ) ,
+                           selected = rep ( FALSE , ncol ( DF ) ) )
+model <- rGtkDataFrame ( model_df )
+#######################
+selected_filter <- model$filter ( )
+selected_filter$setVisibleColumn ( 2 )
+unselected_filter <- model$filter ( )
+unselected_filter$setVisibleFunc ( function ( model , iter ) {
+  !model$get ( iter , 2 ) [[ 1 ]]
+} )
+##############################
+views <- list ( )
+views$unselected_view <- gtkTreeView ( unselected_filter )
+views$selected_view <- gtkTreeView ( selected_filter )
+##
+sapply ( views , function ( view ) {
+  selection <- view$getSelection ( )
+  selection$setMode ( 'multiple' )
+} )
+###############################
+make_view_column <- function ( ) {
+  column <- gtkTreeViewColumn ( )
+  column$setTitle ( "Variable" )
+  column$packStart ( cell_renderer <- gtkCellRendererPixbuf ( ) )
+  column$addAttribute ( cell_renderer , "pixbuf" , 1L )
+  column$packStart ( cell_renderer <- gtkCellRendererText ( ) )
+  column$addAttribute ( cell_renderer , "text" , 0L )
+  column
+}
+sapply ( views , function ( view )
+  view$insertColumn ( make_view_column ( ) , 0 ) )
+################################
+## add t o t h e gtkTreeView API f o r c o n v e n i e n c e
+gtkTreeViewSelectedIndices <- function ( object ) {
+  model <- object$getModel ( ) # F i l t e r e d !
+  paths <- object$getSelection ( ) $getSelectedRows ( ) $retval
+  path_strings <- sapply ( paths , function ( i ) {
+    model$convertPathToChildPath ( i ) $toString ( )
+  } )
+  if ( length ( path_strings ) == 0)
+    integer ( 0 )
+  else
+    as.numeric ( path_strings ) + 1 # 1???b a s e d
+}
+## d o e s o b j e c t have s e l e c t i o n ?
+gtkTreeViewHasSelection <-
+  function ( obj ) length ( obj$selectedIndices ( ) ) > 0
+####################################
+buttons <- list ( )
+buttons$unselect_button <- gtkButton ( "<" )
+buttons$select_button <- gtkButton ( ">" )
+toggleSelectionOnClick <- function ( button , view ) {
+  gSignalConnect ( button , "clicked" , function ( button ) {
+    message ( "clicked" )
+    ind <- view$selectedIndices ( )
+    model [ ind , "selected" ] <- !model [ ind , "selected" ]
+  } )
+}
+sapply ( 1 : 2 , function ( i ) toggleSelectionOnClick ( buttons [[i]] ,
+                                                         views [[3-i]]))
+#######################################
+sapply ( buttons , gtkWidgetSetSensitive , FALSE )
+trackSelection <- function ( button , view ) {
+  gSignalConnect ( view$getSelection ( ) , "changed" ,
+                   function ( x ) button [ 'sensitive' ] <- view$hasSelection ( ) )
+}
+sapply ( 1 : 2 , function ( i ) trackSelection ( buttons [[i]] ,
+                                                 views [[3-i]]))
+#####################################
+window <- gtkWindow ( show=FALSE )
+window$setTitle ( "Select variables example" )
+window$setDefaultSize ( 600 , 400)
+hbox <- gtkHBox ( )
+window$add ( hbox )
+## s c r o l l w i n d o w s
+scrolls <- list ( )
+scrolls$unselected_scroll <- gtkScrolledWindow ( )
+scrolls$selected_scroll <- gtkScrolledWindow ( )
+mapply ( gtkContainerAdd , object = scrolls , widget = views )
+mapply ( gtkScrolledWindowSetPolicy , scrolls ,
+         "automatic" , "automatic" )
+## b u t t o n s
+button_box <- gtkVBox ( )
+centered_box <- gtkVBox ( )
+button_box$packStart ( centered_box , expand=TRUE , fill = FALSE )
+centered_box$setSpacing ( 12 )
+sapply ( buttons , centered_box$packStart , expand = FALSE )
+##
+hbox$packStart ( scrolls$unselected_scroll , expand = TRUE )
+hbox$packStart ( button_box , expand = FALSE )
+hbox$packStart ( scrolls$selected_scroll , expand = TRUE )
+
+window$show ( )
+################################################# Toggle cell renderers
+cell_renderer <- gtkCellRendererToggle ( )
+cell_renderer [ 'activatable' ] <- TRUE # c e l l can be a c t i v a t e d
+cell_renderer [ 'active' ] <- TRUE
+gSignalConnect ( cell_renderer , "toggled" , function ( w , path ) {
+  model$active [ as.numeric ( path ) + 1] <- w [ 'active' ]
+} )
+################################################# Example 9.5: Displaying a checkbox column in a treeview
+old_packages <-
+  old.packages ( ) [ , c ( "Package" , "Installed" , "ReposVer" ) ]
+DF <- as.data.frame ( old_packages )
+########################
+doUpdate <- function ( old_packages )
+  install.packages ( old_packages$Package )
+########################
+model <- rGtkDataFrame ( cbind ( DF , .toggle=rep ( FALSE , nrow ( DF ) ) ) )
+########################
+view <- gtkTreeView ( )
+cell_renderer <- gtkCellRendererToggle ( ) # add t o g g l e
+view$insertColumnWithAttributes ( 0 , "" , cell_renderer ,
+                                  active = ncol ( DF ) )
+cell_renderer [ 'activatable' ] <- TRUE
+gSignalConnect ( cell_renderer , "toggled" ,
+                 function ( cell_renderer , path , user.data ) {
+                   view <- user.data
+                   row <- as.numeric ( path ) + 1
+                   model <- view$getModel ( )
+                   n <- dim ( model ) [ 2 ]
+                   model [ row , n ] <- !model [ row , n ]
+                 } , data=view )
+############################
+mapply ( view$insertColumnWithAttributes , -1, colnames ( DF ) ,
+         list ( gtkCellRendererText ( ) ) , text = seq_along ( DF ) -1L )
+#############################
+view$setModel ( model )
+#############################
+button <- gtkButton ( "Update packages" )
+gSignalConnect ( button , "clicked" , function ( button , data ) {
+  view <- data
+  model <- view$getModel ( )
+  old_packages <-
+    model [ model [ , ncol ( model ) ] , -ncol ( model ) , drop = FALSE ]
+  doUpdate ( old_packages )
+} , data=view )
+############################
+window <- gtkWindow ( show = FALSE )
+window$setTitle ( "Installed packages that need upgrading" )
+window$setSizeRequest ( 300 , 300)
+vbox <- gtkVBox ( ) ; window$add ( vbox )
+scrolled_window <- gtkScrolledWindow ( )
+vbox$packStart ( scrolled_window , expand = TRUE , fill = TRUE )
+scrolled_window$add ( view )
+scrolled_window$setPolicy ( "automatic" , "automatic" )
+vbox$packStart ( button , expand = FALSE )
+window$show ( )
+################################################# Progress cell renderers
+cell_renderer <- gtkCellRendererProgress ( )
+cell_renderer [ "value" ] <- 50
+################################################# Overriding attribute mappings
+func <- function ( column , cell_renderer , model , iter , data ) {
+  val <- model$getValue ( iter , 0)$value
+  f_val <- sprintf ( "%.3f" , val )
+  cell_renderer [ 'text' ] <- f_val
+  cell_renderer [ 'xalign' ] <- 1
+}
+###########################
+view <- gtkTreeView ( rGtkDataFrame ( data.frame ( rnorm ( 100 ) ) ) )
+cell_renderer <- gtkCellRendererText ( )
+view$insertColumnWithAttributes ( 0 , "numbers" , cell_renderer ,
+                                  text = 0)
+column <- view$getColumn ( 0 )
+column$setCellDataFunc ( cell_renderer , func )
+# 9.2 Displaying hierarchical data################################################################################################################
+
+################################################# Loading hierarchical data
+
+################################################# Example 9.6: Defining a tree
+model <- gtkTreeStore ( "gchararray" )
+by ( Cars93 , Cars93$Manufacturer , function ( DF ) {
+  parent_iter <- model$append ( )
+  model$setValue ( parent_iter$iter , column = 0 , value =
+                     DF$Manufacturer [ 1 ] )
+  sapply ( DF$Model , function ( car_model ) {
+    child_iter <- model$append ( parent = parent_iter$iter )
+    if ( is.null ( child_iter$retval ) )
+      model$setValue ( child_iter$iter , column = 0 ,
+                       value = car_model )
+  } )
+} )
+##########################
+iter <- model$getIterFromString ( "0:0" )
+model$getValue ( iter$iter , column = 0) $value
+#########################
+iter <- model$getIterFirst ( )
+values <- NULL
+while ( iter$retval ) {
+  child_iter <- model$iterChildren ( iter$iter )
+  while ( child_iter$retval ) {
+    values <- c ( values , model$get ( child_iter$iter , 0 ) [[ 1 ]] )
+    child_iter$retval <- model$iterNext ( child_iter$iter )
+  }
+  iter$retval <- model$iterNext ( iter$iter )
+}
+################################################# Row manipulations
+
+################################################# Displaying data as a tree
+
+################################################# Example 9.7: A simple tree display
+view <- gtkTreeView ( )
+view$insertColumnWithAttributes ( 0 , "Make" ,
+                                  gtkCellRendererText ( ) , text = 0)
+#########################
+view$setModel ( model )
+###########################
+model <- rGtkDataFrame ( Cars93 [ , "Model" , drop=FALSE ] )
+view$setModel ( model )
+# 9.3 Model-based combo boxes################################################################################################################
+
+################################################# Example 9.8: A combo box with memory
+model <- rGtkDataFrame ( data.frame ( filename = character ( 0 ) ,
+                                        visits = character ( 0 ) ,
+                                        nvisits = integer ( 0 ) ,
+                                        stringsAsFactors = FALSE ) )
+##########################
+combo_box <- gtkComboBoxEntryNewWithModel ( model ,
+                                            text.column = 0)
+#########################
+cell_renderer <- gtkCellRendererText ( )
+combo_box$packStart ( cell_renderer )
+combo_box$addAttribute ( cell_renderer , "text" , 1)
+cell_renderer [ 'foreground' ] <- "gray50"
+cell_renderer [ 'ellipsize' ] <- "end"
+cell_renderer [ 'style' ] <- "italic"
+cell_renderer [ 'alignment' ] <- "right"
+#########################
+callHelpFunction <- function ( combo_box , value ) {
+  model <- combo_box$getModel ( )
+  ind <- match ( value , model [ , 1 , drop=TRUE ] )
+  nvisits <- model [ ind , "nvisits" ] <- model [ ind , "nvisits" ]+1
+  model [ ind , "visits" ] <-
+    sprintf ( ngettext ( nvisits , "%s visit" , "%s visits" ) , nvisits )
+  ## s e l e c t f o r e a s i e r e d i t i n g
+  combo_box$getChild ( ) $selectRegion ( start = 0 , end = -1)
+  help ( value )
+}
+gSignalConnect ( combo_box , "changed" ,
+                 f = function ( combo_box , ... ) {
+                   if ( combo_box$getActive ( ) >= 0) {
+                     value <- combo_box$getActiveText ( )
+                     callHelpFunction ( combo_box , value )
+                   }
+                 } )
+#########################
+gSignalConnect ( combo_box$getChild ( ) , "activate" ,
+                 f = function ( combo_box , entry , ... ) {
+                   value <- entry$getText ( )
+                   if ( !any ( value == combo_box$getModel ( ) [ , 1 ] ) ) {
+                     model <- combo_box$getModel ( )
+                     tmp <- data.frame ( filename = value , visits = "" ,
+                                           nvisits = 0 ,
+                                           stringsAsFactors = FALSE )
+                     model$appendRows ( tmp )
+                   }
+                   callHelpFunction ( combo_box , value )
+                 } , data = combo_box , user.data.first = TRUE )
+##############################
+window <- gtkWindow ( show = FALSE )
+window [ 'border -width' ] <- 15
+hbox <- gtkHBox ( ) ; window$add ( hbox )
+hbox$packStart ( gtkLabel ( "Help on:" ) )
+hbox$packStart ( combo_box , expand = TRUE , fill = TRUE )
+#
+window$show ( )
+# 9.4 Text-entry widgets with completion################################################################################################################
+
+################################################# Example 9.9: Text entry with completion
+entry <- gtkEntry ( ) ; completion <- gtkEntryCompletion ( )
+entry$setCompletion ( completion )
+########################
+model <- rGtkDataFrame ( state.name )
+completion$setModel ( model )
+completion$setTextColumn ( 0 )
+completion [ 'inline-completion' ] <- TRUE
+completion [ 'popup-single-match' ] <- FALSE
+#######################
+matchAnywhere <- function ( completion , key , iter , user.data ) {
+  model <- completion$getModel ( )
+  row_value <- model$getValue ( iter , 0) $value
+  key <- completion$getEntry ( ) $getText ( ) # c a s e s e n s i t i v i t y
+  grepl ( key , row_value )
+}
+completion$setMatchFunc ( matchAnywhere )
+# 9.5 Sharing buffers between text entries################################################################################################################
+buffer <- gtkEntryBuffer ( )
+entry1 <- gtkEntry ( buffer = buffer )
+entry2 <- gtkEntry ( buffer = buffer )
+entry1$setText ( "echo" )
+entry2$getText ( )
+# 9.6 Text views#################################################################################################################################################################
+
+################################################# Example 9.10: Basic gtkTextView usage
+view <- gtkTextView ( )
+scrolled_window <- gtkScrolledWindow ( )
+scrolled_window$add ( view )
+scrolled_window$setPolicy ( "automatic" , "automatic" )
+##
+window <- gtkWindow ( )
+window [ 'border-width' ] <- 15
+window$add ( scrolled_window )
+##########################
+buffer <- view$getBuffer ( )
+buffer$setText ( "Lorem ipsum dolor sit amet ..." )
+########################
+start <- buffer$getStartIter ( ) $iter
+end <- buffer$getEndIter ( ) $iter
+buffer$getText ( start , end )
+################################################# Adding text
+
+################################################# Properties
+view [ 'editable' ] <- FALSE
+view [ 'cursor-visible' ] <- FALSE
+################################################# Formatting
+
+################################################# Fonts
+# 9.7 Text buffers#################################################################################################################################################################
+
+################################################# Iterators
+bounds <- buffer$getBounds ( )
+bounds
+##########################
+iter <- buffer$getIterAtLineOffset ( 0 , 6)
+iter$iter$getChar ( ) # unicode , not t e x t
+##########################
+bounds$start$getChar ( ) # u n i c o d e
+############################
+bounds$start$getText ( bounds$end )
+
+buffer$insert ( bounds$start , "prefix" )
+################################################# Example 9.11: Finding the word that is clicked by the user
+gSignalConnect ( view , "button-press-event" ,
+                 f=function ( view , event , ... ) {
+                   start <- view$getIterAtLocation ( event$getX ( ) ,
+                                                     event$getY ( ) ) $iter
+                   end <- start$copy ( )
+                   start$backwardWordStart ( )
+                   end$forwardWordEnd ( )
+                   val <- start$getText ( end )
+                   print ( val )
+                   return ( FALSE ) # c a l l next handler
+                 } )
+
+################################################# Marks
+insert <- buffer$getMark ( "insert" )
+#####################
+insert_iter <- buffer$getIterAtMark ( insert ) $iter
+bounds$start$getText ( insert_iter )
+#####################
+insert_iter$getOffset ( )
+######################
+buffer$insert ( insert_iter , "at insertion point" )
+buffer$getIterAtMark ( insert ) $iter$getOffset ( )
+#########################
+mark <- buffer$createMark ( mark.name = "start" ,
+                            where = buffer$getStartIter ( ) $iter ,
+                            left.gravity = TRUE )
+################################################# Tags
+tag_bold <- buffer$createTag ( tag.name="bold" ,
+                               weight=PangoWeight [ "bold" ] )
+tag_emph <- buffer$createTag ( tag.name="emph" ,
+                               style=PangoStyle [ "italic" ] )
+tag_large <- buffer$createTag ( tag.name="large" ,
+                                font="Serif normal 18" )
+######################
+iter <- buffer$getBounds ( )
+buffer$applyTag ( tag_bold , iter$start , iter$end ) # i t e r s upd at e
+buffer$applyTagByName ( "emph" , iter$start , iter$end )
+################################################# Selection and the clipboard
+start_iter <- buffer$getStartIter ( ) $iter
+end_iter <- start_iter$copy ( ) ; end_iter$forwardWordEnd ( )
+buffer$selectRange ( start_iter , end_iter )
+#######################
+clipboard <- gtkClipboardGet ( )
+#########################
+buffer$copyClipboard ( clipboard )
+buffer$pasteClipboard ( clipboard ,
+                        override.location = buffer$getEndIter ( ) $iter ,
+                        default.editable = TRUE )
+################################################# Inserting nontext items
+anchor <- buffer$createChildAnchor ( buffer$getEndIter ( ) $iter )
+#########################
+button <- gtkButton ( "click me" )
+view$addChildAtAnchor ( button , anchor )
+################################################# Example 9.12: A simple command-line interface
+view <- gtkTextView ( )
+buffer <- view$getBuffer ( )
+font <- pangoFontDescriptionFromString ( "Monospace" )
+view$modifyFont ( font ) # w id ge t wide
+
+#####################
+buffer$createTag ( tag.name = "cmdInput" )
+buffer$createTag ( tag.name = "cmdOutput" ,
+                   weight = PangoWeight [ "bold" ] )
+buffer$createTag ( tag.name = "cmdError" ,
+                   weight = PangoStyle [ "italic" ] , foreground = "red" )
+buffer$createTag ( tag.name = "uneditable" , editable = FALSE )
+#########################
+start_cmd <- buffer$createMark ( "start_cmd" ,
+                                 buffer$getStartIter ( ) $iter ,
+                                 left.gravity = TRUE )
+bufferEnd <- buffer$createMark ( "bufferEnd" ,
+                                 buffer$getEndIter ( ) $iter )
+#########################
+
+add_prompt <- function ( obj , prompt = c ( "prompt" , "continue" ) ,
+                         set_mark = TRUE )
+{
+  prompt <- match.arg ( prompt )
+  prompt <- getOption ( prompt )
+  end_iter <- obj$getEndIter ( )
+  obj$insert ( end_iter$iter , prompt )
+  if ( set_mark )
+    obj$moveMarkByName ( "start_cmd" , end_iter$iter )
+  obj$applyTagByName ( "uneditable" , obj$getStartIter ( ) $iter ,
+                       end_iter$iter )
+}
+add_prompt ( buffer ) ## p l a c e an i n i t i a l prompt
+
+###########################
+add_ouput <- function ( obj , output , tag_name = "cmdOutput" ) {
+  end_iter <- obj$getEndIter ( )
+  if ( length ( output ) > 0)
+    sapply ( output , function ( i ) {
+      obj$insertWithTagsByName ( end_iter$iter , i , tag_name )
+      obj$insert ( end_iter$iter , "\n" , len=-1)
+    } )
+}
+#############################
+find_cmd <- function ( obj ) {
+  end_iter <- obj$getEndIter ( )
+  start_iter <- obj$getIterAtMark ( start_cmd )
+  cmd <- obj$getText ( start_iter$iter , end_iter$iter , TRUE )
+  regex <- paste ( "\n[" , getOption ( "continue" ) , "] " , sep = "" )
+  cmd <- unlist ( strsplit ( cmd , regex ) )
+  cmd
+}
+##############################
+require ( evaluate )
+eval_cmd <- function ( view , cmd ) {
+  buffer <- view$getBuffer ( )
+  out <- try ( evaluate:::evaluate ( cmd , .GlobalEnv ) ,
+               silent = TRUE )
+  if ( inherits ( out , "try-error" ) ) {
+    ## p a r s e e r r o r
+    add_ouput ( buffer , out , "cmdError" )
+  } else if ( inherits ( out [[ 2 ]] , "error" ) ) {
+    if ( grepl ( "end" , out [[ 2 ]] ) ) { # a hack h e r e
+      add_prompt ( buffer , "continue" , set_mark = FALSE )
+      return ( )
+    } else {
+      add_ouput ( buffer , out [[ 2 ]] $message , "cmdError" )
+    }
+  } else {
+    add_ouput ( buffer , out [[ 2 ]] , "cmdOutput" )
+  }
+  add_prompt ( buffer , "prompt" , set_mark = TRUE )
+}
+
+#############################
+gSignalConnect ( view , "key-release -event" ,
+                 f=function ( view , event ) {
+                   buffer <- view$getBuffer ( )
+                   keyval <- event$getKeyval ( )
+                   if ( keyval == GDK_Return ) {
+                     cmd <- find_cmd ( buffer )
+                     if ( length ( cmd ) && nchar ( cmd ) > 0)
+                       eval_cmd ( view , cmd )
+                   }
+                 } )
+################################
+scroll_viewport <- function ( view , ... ) {
+  view$scrollToMark ( bufferEnd , within.margin = 0)
+  return ( FALSE )
+}
+gSignalConnect ( buffer , "changed" , scroll_viewport , data=view ,
+                 after = TRUE , user.data.first = TRUE )
+
+
+
+
+</pre>

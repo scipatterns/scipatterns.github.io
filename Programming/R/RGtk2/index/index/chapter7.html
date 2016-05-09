@@ -1,0 +1,292 @@
+<pre>
+# 7.1 Top-level windows ################################################################################################################
+
+window <- gtkWindow ( show=FALSE ) # use d e f a u l t t y p e
+window$setTitle ( "Window title" ) # s e t window t i t l e
+window [ 'title' ] # or use g e t T i t l e
+window$setDefaultSize (250 ,300) # 250 wide , 300 high
+window$show ( ) # show window
+########################################################## Adding a child component to a window
+window <- gtkWindow ( show = FALSE )
+window$setTitle ( "Hello World" )
+label <- gtkLabel ( "Hello World" )
+window$add ( label )
+########################################################## Destroying windows
+gSignalConnect ( window , "delete -event" , function ( event , ... ) {
+dialog <- gtkMessageDialog ( parent = window , flags = 0 ,
+                             type = "question" ,
+                             buttons = "yes-no" ,
+                             "Are you sure you want to quit?" )
+out <- dialog$run ( ) ; dialog$destroy ( )
+out != GtkResponseType [ "yes" ]
+} )
+################################################
+window$destroy ( )
+########################################################### Transient windows
+## c r e a t e a window and a d i a l o g window
+window <- gtkWindow ( show = FALSE )
+window$setTitle ( "Top level window" )
+##
+dialog <- gtkWindow ( show = FALSE )
+dialog$setTitle ( "dialog window" )
+dialog$setTransientFor ( window )
+dialog$setPosition ( "center -on-parent" )
+dialog$setDestroyWithParent ( TRUE )
+window$show ( )
+dialog$show ( )
+# 7.2 Layout containers ################################################################################################################
+################################################ Basics
+window <- gtkWindow ( show=FALSE )
+window$setTitle ( "Hello World" )
+label <- gtkLabel ( "Hello World" )
+window$add ( label )
+window$getChild ( ) [ 'label' ]
+window [ [ 1 ] ] [ 'label' ]
+window$remove ( label )
+window$add ( label )
+################################################# Widget size negotiation
+window <- gtkWindow ( )
+window$setTitle ( "Hello World" )
+label <- gtkLabel ( "Hello World" )
+window$add ( label )
+label$getAllocation ( ) $allocation
+#######################
+window <- gtkWindow ( show = FALSE )
+window$setTitle ( "Hello World" )
+label <- gtkLabel ( "Hello World" )
+window$add ( label )
+window$show ( )
+label$getAllocation ( ) $allocation
+################################################# Box containers
+box <- gtkHBox ( TRUE , 5)
+button_a <- gtkButton ( "Button A" )
+button_b <- gtkButton ( "Button B" )
+box$packStart ( button_a , fill = FALSE )
+box$packStart ( button_b , fill = FALSE )
+#######################
+box <- gtkHBox ( FALSE , 5)
+box$packStart ( button_a , expand = TRUE , fill = FALSE )
+box$packStart ( button_b , expand = FALSE , fill = FALSE )
+################################################# Padding
+
+
+################################################# Positioning
+b3 <- hbox [ [ 3 ] ]
+hbox$reorderChild ( b3 , 2 ??? 1) # s e c o n d i s 2 ??? 1
+################################################# Alignment
+
+window <- gtkWindow ( ) ; window$setTitle ( "Hello World" )
+label <- gtkLabel ( "Hello World" )
+window$add ( label )
+label [ "xalign" ] <- 0
+#######################
+window <- gtkWindow ( ) ; window$setTitle ( "Hello World" )
+alignment <- gtkAlignment ( )
+alignment$set ( xalign = 0 , yalign = 0 . 5 , xscale = 0 , yscale =1)
+window$add ( alignment )
+12
+label <- gtkLabel ( "Hello World" )
+alignment$add ( label )
+# 7.3 Dialogs ###########################################################################################################################
+################################################# Message dialogs
+window <- gtkWindow ( ) ; window [ 'title' ] <- "Parent window"
+#
+dialog <- gtkMessageDialog ( parent=window ,
+                      flags="destroy -with -parent" ,
+                      type="question" ,
+                      buttons="ok" ,
+                      "My message" )
+dialog [ 'secondary -text' ] <- "A secondary message"
+
+###
+response <- dialog$run ( )
+if ( response == GtkResponseType [ "cancel" ] ||
+response == GtkResponseType [ "close" ] ||
+response == GtkResponseType [ "delete -event" ] ) {
+  ## p a s s
+} else if ( response == GtkResponseType [ "ok" ] ) {
+message ( "Ok" )
+}
+dialog$destroy ( )
+################################################# Custom dialogs
+dialog <- gtkDialogNewWithButtons ( title = "Enter a value" ,
+                          parent = NULL , flags = 0 ,
+                          "gtk-ok" , GtkResponseType [ "ok" ] ,
+                          "gtk-cancel" , GtkResponseType [ "cancel" ] ,
+                          show = FALSE )
+#########
+
+hbox <- gtkHBox ( )
+hbox [ 'spacing' ] <- 10
+#
+hbox$packStart ( gtkLabel ( "Enter a value:" ) )
+entry <- gtkEntry ( )
+hbox$packStart ( entry )
+#
+vbox <- dialog$getContentArea ( )
+vbox$packStart ( hbox )
+
+###############
+gSignalConnect ( dialog , "response" ,
+                      f=function ( dialog , response , user . data ) {
+                      if ( response == GtkResponseType [ "ok" ] )
+                      print ( entry$getText ( ) ) # R e p l a c e t h i s
+                      dialog$Destroy ( )
+                      } )
+dialog$showAll ( )
+dialog$setModal ( TRUE )
+################################################# File chooser
+dialog <- gtkFileChooserDialog ( title = "Open a file" ,
+                        parent = NULL , action = "open" ,
+                        "gtk-ok" , GtkResponseType [ "ok" ] ,
+                        "gtk-cancel" , GtkResponseType [ "cancel" ] ,
+                        show = FALSE )
+
+##############
+gSignalConnect ( dialog , "response" ,
+                      f = function ( dialog , response , data ) {
+                      if ( response == GtkResponseType [ "ok" ] ) {
+                      filename <- dialog$getFilename ( )
+                      print ( filename )
+                      }
+                      dialog$destroy ( )
+                      } )
+##############
+fileFilter <- gtkFileFilter ( )
+fileFilter$setName ( "R files" )
+fileFilter$addPattern ( "*.R" )
+fileFilter$addPattern ( "*.Rdata" )
+dialog$addFilter ( fileFilter )
+# 7.4 Special-purpose containers ################################################################################################################
+
+################################################# Framed containers
+frame <- gtkFrame ( "Options" )
+vbox <- gtkVBox ( )
+vbox$packStart ( gtkCheckButton ( "Option 1" ) , FALSE )
+vbox$packStart ( gtkCheckButton ( "Option 2" ) , FALSE )
+frame$add ( vbox )
+################################################# Expandable containers
+expander <- gtkExpander ( "Advanced" )
+expander$add ( frame )
+################################################# Notebooks
+notebook <- gtkNotebook ( )
+notebook$appendPage ( gtkLabel ( "Page 1" ) , gtkLabel ( "Tab 1" ) )
+notebook$appendPage ( gtkLabel ( "Page 2" ) , gtkLabel ( "Tab 2" ) )
+notebook [ 'tab-pos' ] <- "bottom"
+notebook [ 'page' ] <- 1
+notebook [ 'page' ]
+################################################# Example 7.2: Adding a page with a close button
+gtkNotebookInsertPageWithCloseButton <-
+function ( object , child , label . text="" , position=???1) {
+icon <- gtkImage ( pixbuf =
+object$renderIcon ( "gtk-close" , "button" , size = "menu" ) )
+closeButton <- gtkButton ( )
+closeButton$setImage ( icon )
+closeButton$setRelief ( "none" )
+##
+label <- gtkHBox ( )
+label$packStart ( gtkLabel ( label . text ) )
+label$packEnd ( closeButton )
+##
+gSignalConnect ( closeButton , "clicked" , function ( button ) {
+index <- object$pageNum ( child )
+object$removePage ( index )
+} )
+object$insertPage ( child , label , position )
+}
+window <- gtkWindow ( )
+notebook <- gtkNotebook ( ) ; window$add ( notebook )
+notebook$insertPageWithCloseButton ( gtkButton ( "hello" ) ,
+label . text = "page 1" )
+notebook$insertPageWithCloseButton ( gtkButton ( "world" ) ,
+label . text = "page 2" )
+################################################# Scrollable windows
+library ( cairoDevice )
+device <- gtkDrawingArea ( )
+device$setSizeRequest ( 600 , 400)
+asCairoDevice ( device )
+##################
+scrolled <- gtkScrolledWindow ( )
+scrolled$addWithViewport ( device )
+#################
+zoomPlot <- function ( x = 2.0 ) {
+allocation <- device$getAllocation ( ) $allocation
+device$setSizeRequest ( allocation$width * x ,
+allocation$height * x )
+updateAdjustment <- function ( adjustment ) {
+adjustment$setValue ( x * adjustment$getValue ( ) +
+( x ??? 1) * adjustment$getPageSize ( ) / 2)
+}
+updateAdjustment ( scrolled$getHadjustment ( ) )
+updateAdjustment ( scrolled$getVadjustment ( ) )
+}
+###################
+gSignalConnect ( scrolled , "key-press -event" ,
+              function ( scrolled , event ) {
+              key <- event [ [ "keyval" ] ]
+              if ( key == GDK_plus )
+              zoomPlot ( 2 . 0 )
+              else if ( key == GDK_minus )
+              zoomPlot ( 0 . 5 )
+              TRUE
+              } )
+##################
+win <- gtkWindow ( show = FALSE )
+win$add ( scrolled )
+win$showAll ( )
+plot ( mpg ~ hp , data = mtcars )
+################################################# Divided containers
+paned <- gtkHPaned ( )
+
+paned$add1 ( gtkLabel ( "Left (1)" ) )
+paned$add2 ( gtkLabel ( "Right (2)" ) )
+
+paned$pack1 ( gtkLabel ( "Left (1)" ) , resize = TRUE , shrink=TRUE )
+paned$pack2 ( gtkLabel ( "Right (2)" ) , resize = TRUE , shrink=TRUE )
+################################################# Tabular layout
+################################################# Example 7.3: Dialog layout
+table <- gtkTable ( rows = 3 , columns = 2 , homogeneous = FALSE )
+size_label <- gtkLabel ( "Sample size:" )
+size_combo <- gtkComboBoxNewText ( )
+sapply ( c ( 5 , 10 , 15 , 3 0 ) , size_combo$appendText )
+##
+diag_label <- gtkLabel ( "Diagnostic:" )
+diag_radio <- gtkVBox ( )
+radiogp <- list ( )
+radiogp$t <- gtkRadioButton ( label = "t-statistic" )
+radiogp$mean <- gtkRadioButton ( radiogp , label = "mean" )
+radiogp$median <- gtkRadioButton ( radiogp , label = "median" )
+sapply ( radiogp , diag_radio$packStart )
+##
+submit_vbox <- gtkVBox ( )
+submit_vbox$packEnd ( gtkButton ( "Run simulation" ) , expand=FALSE )
+#################
+size_label [ 'xalign' ] <- 1
+diag_label [ 'xalign' ] <- 1 ; diag_label [ 'yalign' ] <- 0
+diag_align <- gtkAlignment ( xalign = 0)
+diag_align$add ( diag_radio )
+######################
+table$attach ( size_label , left . attach = 0 , 1 , top . attach = 0 , 1 ,
+xoptions = c ( "expand" , "fill" ) , yoptions = "" )
+table$attach ( size_combo , left . attach = 1 , 2 , top . attach = 0 , 1 ,
+xoptions = "fill" , yoptions = "" )
+##
+table$attach ( diag_label , left . attach = 0 , 1 , top . attach = 1 , 2 ,
+xoptions = c ( "expand" , "fill" ) ,
+yoptions = c ( "expand" , "fill" ) )
+##
+table$attach ( diag_align , left . attach = 1 , 2 , top . attach = 1 , 2 ,
+xoptions = c ( "expand" , "fill" ) , yoptions = "" )
+##
+table$attach ( submit_vbox , left . attach = 1 , 2 , top . attach = 2 , 3 ,
+xoptions = "" , yoptions = c ( "expand" , "fill" ) )
+#############################
+table$setColSpacing ( 0 , 5)
+############################
+window <- gtkWindow ( show=FALSE )
+window [ 'border -width' ] <- 14
+window$setTitle ( "GtkTable Example" )
+window$add ( table )
+
+
+</pre>

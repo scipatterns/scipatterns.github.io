@@ -1,0 +1,313 @@
+<pre>
+# 10.1 Actions#################################################################################################################################################################
+action <- gtkAction ( name = "ok" , label = "_Ok" ,
+                      tooltip = "An OK button" , stock.id = "gtk-ok" )
+########################
+gSignalConnect ( action , "activate" ,
+                 f = function ( action , data ) {
+                   print ( action$getName ( ) )
+                 } )
+########################
+button <- gtkButton ( )
+button$setRelatedAction ( action )
+#######################
+group <- gtkActionGroup ( )
+group$addActionWithAccel ( action , "<control >O" )
+######################
+full_screen_act <- gtkToggleAction ( "fullscreen" , "Full screen" ,
+                                     "Toggle full screen" ,
+                                     stock.id = "gtk-fullscreen" )
+gSignalConnect ( full_screen_act , "toggled" , function ( action ) {
+  if ( full_screen_action [ 'active' ] )
+    window$fullscreen ( )
+  else
+    window$unfullscreen ( )
+} )
+# 10.2 Menus#################################################################################################################################################################
+################################################# Menu bars
+menubar <- gtkMenuBar ( )
+##################
+file_menu <- gtkMenu ( )
+###################
+file_item <- gtkMenuItemNewWithMnemonic ( label = "_File" )
+file_item$setSubmenu ( file_menu )
+#####################
+menubar$append ( file_item )
+#########################
+open_item <- gtkMenuItemNewWithMnemonic ( "_Open" )
+#########################
+gSignalConnect ( open_item , "activate" , function ( item ) {
+  file.show ( file.choose ( ) )
+} )
+###########################
+file_menu$append ( open_item )
+###########################
+save_action <-
+  gtkAction ( "save" , "Save" , "Save object" , "gtk-save" )
+############################
+save_item <- save_action$createMenuItem ( )
+file_menu$append ( save_item )
+###########################
+file_menu$append ( gtkSeparatorMenuItem ( ) )
+#############################
+auto_save_action <- gtkToggleAction ( "autosave" , "Autosave" ,
+                                      "Enable autosave" )
+auto_save_item <- auto_save_action$createMenuItem ( )
+file_menu$append ( auto_save_item )
+############################
+main_mindow <- gtkWindow ( )
+vbox <- gtkVBox ( )
+main_mindow$add ( vbox )
+vbox$packStart ( menubar , FALSE , FALSE )
+################################################# Pop-up menus
+################################################# Example 10.1: Pop-up menus
+popup <- gtkMenu ( ) # t o p l e v e l
+popup$append ( gtkMenuItem ( "cut" ) )
+popup$append ( gtkMenuItem ( "copy" ) )
+popup$append ( gtkSeparatorMenuItem ( ) )
+popup$append ( gtkMenuItem ( "paste" ) )
+#################################
+button <- gtkButton ( "Click me with right mouse button" )
+window <- gtkWindow ( ) ; window$setTitle ( "Popup menu example" )
+window$add ( button )
+##################################
+gSignalConnect ( button , "button -press -event" ,
+                 f = function ( button , event , menu ) {
+                   if ( event$getButton ( ) == 3 ||
+                        ( event$getButton ( ) == 1 && # a mac
+                          event$getState ( ) == GdkModifierType [ 'control-mask' ] ) )
+                     gtkMenuPopup ( menu ,
+                                    button = event$getButton ( ) ,
+                                    activate.time = event$getTime ( ) )
+                   return ( FALSE )
+                 } , data = popup )
+####################################
+sapply ( popup$getChildren ( ) , function ( child ) {
+  if ( !inherits ( child , "GtkSeparatorMenuItem" ) ) # s k i p t h e s e
+    gSignalConnect ( child , "activate" ,
+                     f = function ( child , data ) message ( "replace me" ) )
+} )
+# 10.3 Toolbars#################################################################################################################################################################
+toolbar <- gtkToolbar ( )
+#####################
+open_button <- gtkToolButton ( stock.id = "gtk-open" )
+#####################
+toolbar$add ( open_button )
+########################
+save_button <- save_action$createToolItem ( )
+toolbar$add ( save_button )
+#######################
+toolbar$add ( gtkSeparatorToolItem ( ) )
+#######################
+full_screen_button <- full_screen_act$createToolItem ( )
+toolbar$add ( full_screen_button )
+########################
+toolbar$setStyle ( "icon" )
+#########################
+full_screen_act [ "is-important" ] <- TRUE
+########################
+expander <- gtkSeparatorToolItem ( )
+expander [ "draw" ] <- FALSE
+toolbar$add ( expander )
+toolbar$childSet ( expander , expand = TRUE )
+#######################
+help_action <- gtkAction ( "help" , "Help" , "Get help" , "gtk-help" )
+toolbar$add ( help_action$createToolItem ( ) )
+########################
+vbox$packStart ( toolbar , FALSE , FALSE )
+################################################# Example 10.2: Color-menu tool button
+gdk_color <- gdkColorParse ( palette ( ) [ 1 ] ) $color
+color_button <- gtkColorButton ( gdk_color )
+#############################
+colorMenuItem <- function ( color ) {
+  drawing_area <- gtkDrawingArea ( )
+  drawing_area$setSizeRequest ( 20 , 20)
+  drawing_area$modifyBg ( "normal" , color )
+  image_item <- gtkImageMenuItem ( color )
+  image_item$setImage ( drawing_area )
+  image_item
+}
+color_items <- sapply ( palette ( ) , colorMenuItem )
+color_menu <- gtkMenu ( )
+for ( item in color_items )
+  color_menu$append ( item )
+##########################
+colorMenuItemActivated <- function ( item ) {
+  color <- gdkColorParse ( item$getLabel ( ) ) $color
+  color_button$setColor ( color )
+}
+sapply ( color_items , gSignalConnect , "activate" ,
+         colorMenuItemActivated )
+########################
+menu_button <- gtkMenuToolButton ( color_button , "Color" )
+menu_button$setMenu ( color_menu )
+toolbar$add ( menu_button )
+#########################
+file_group <- gtkToolItemGroup ( "File" )
+file_group$add ( gtkToolButton ( stock.id = "gtk-open" ) )
+file_group$add ( save_action$createToolItem ( ) )
+help_group <- gtkToolItemGroup ( "Help" )
+help_group$add ( help_action$createToolItem ( ) )
+##########################
+palette <- gtkToolPalette ( )
+palette$add ( file_group )
+palette$add ( help_group )
+##########################
+help_group$setCollapsed ( TRUE )
+# 10.4 Status reporting############################################################################################################################################################
+
+################################################# Status bars
+statusbar <- gtkStatusbar ( )
+io_id <- statusbar$getContextId ( "I/O" )
+statusbar$push ( io_id , "Incomplete final line" )
+## . . .
+statusbar$pop ( io_id )
+################################################# Info bars
+info_bar <- gtkInfoBar ( show=FALSE )
+info_bar$setNoShowAll ( TRUE )
+###################
+label <- gtkLabel ( "Warning , Warning ...." )
+info_bar$setMessageType ( "warning" )
+info_bar$getContentArea ( ) $add ( label )
+#####################
+info_bar$addButton ( button.text = "gtk-ok" ,
+                     response.id = GtkResponseType [ 'ok' ] )
+####################
+gSignalConnect ( info_bar , "response" ,
+                 function ( info_bar , resp.id ) info_bar$hide ( ) )
+####################
+vbox$packStart ( info_bar , expand = FALSE )
+info_bar$show ( )
+# 10.5 Managing a complex user interface#############################################################################################################################################
+
+################################################# Example 10.3: UI manager example
+ui.xml <- readLines ( out <- textConnection ( '<ui>
+                                                 <menubar name="menubar">
+                                                 <menu name="FileMenu" action="File">
+                                                 <menuitem action="Save"/>
+                                                 <menuitem action="SaveAs" />
+                                                 <menu name="Export" action="Export">
+                                                 <menuitem action="ExportToCSV" />
+                                                 <menuitem action="ExportToSaveFile" />
+                                                 </menu >
+                                                 <separator />
+                                                 <menuitem name="FileQuit" action="CloseWindow" />
+                                                 </menu >
+                                                 <menu action="Edit">
+                                                 <menuitem name="EditUndo" action="Undo" />
+                                                 <menuitem name="EditRedo" action="Redo" />
+                                                 <menuitem action="ChangeColumnName" />
+                                                 </menu >
+                                                 <menu action="Tools">
+                                                 <menuitem action="Filter" />
+                                                 <menuitem action="Sort" />
+                                                 </menu >
+                                                 </menubar >
+                                                 <toolbar name="toolbar">
+                                                 <toolitem action="Save"/>
+                                                 <toolitem action="SaveAs"/>
+                                                 <separator />
+                                                 <toolitem action="CloseWindow"/>
+                                                 </toolbar >
+                                                 </ui>') , warn=FALSE )
+close ( out )
+
+
+#######################
+id <- uimanager$addUiFromString ( ui.xml )
+#########################
+file_list <-
+  list ( ## name , ID , l a b e l , a c c e l e r a t o r , t o o l t i p , c a l l b a c k
+    list ( "File" , NULL , "_File" , NULL , NULL , NULL ) ,
+    list ( "Save" , "gtk-save" , "Save" , "<ctrl >S" ,
+           "Save data to variable" , fun ) ,
+    list ( "SaveAs" , "gtk-save" , "Save as..." , NULL ,
+           "Save data to variable" , fun ) ,
+    list ( "Export" , NULL , "Export" , NULL , NULL , NULL ) ,
+    list ( "ExportToCSV" , "gtk-export" , "Export to CSV" ,
+           NULL , "Save data to CSV file" , fun ) ,
+    list ( "ExportToSaveFile" , "gtk-export" ,
+           "Export to save file" , NULL ,
+           "Save data to save() file" , fun ) ,
+    list ( "CloseWindow" , "gtk-close" , "Close window" ,
+           "<ctrl >W" , "Close current window" , fun )
+  )
+######################
+action_group <- gtkActionGroup ( "FileGroup" )
+action_group$addActions ( file_list )
+#######################
+uimanager$insertActionGroup ( action_group , 0)
+######################
+window <- gtkWindow ( show = FALSE )
+##
+vbox <- gtkVBox ( )
+window$add ( vbox )
+##
+menubar <- uimanager$getWidget ( "/menubar" )
+vbox$packStart ( menubar , FALSE )
+toolbar <- uimanager$getWidget ( "/toolbar" )
+vbox$packStart ( toolbar , FALSE )
+## . . .
+############################
+window$addAccelGroup ( uimanager$getAccelGroup ( ) )
+
+################################################# Command pattern
+Command <- setRefClass ( "Command" ,
+                         fields = list (
+                           receiver="ANY" ,
+                           meth="character" ,
+                           params="list" ,
+                           old_params="list"
+                         ) )
+###########################
+
+Command$methods (
+  initialize = function ( receiver , meth , ... ) {
+    .params <- list ( ... )
+    initFields ( receiver = receiver , meth = meth ,
+                 params = .params , old_params = .params )
+    callSuper ( )
+  } ,
+  execute = function ( params ) {
+    do.call ( call_meth ( meth , receiver ) , params )
+  } )
+
+##########################
+Command$methods (
+  do = function ( ) {
+    out <- execute ( params )
+    old_params$value <<- out
+  } ,
+  undo = function ( ) execute ( old_params )
+)
+##########################
+x <- 1
+set_x <- function ( value ) {
+  old <- x
+  x <<- value
+  old
+}
+cmd <- Command$new ( .GlobalEnv , "set_x" , value = 2)
+cmd$do ( ) ; x
+cmd$undo ( ) ;
+x
+############################
+cmd <- Command$new ( df_model , "set_col_name" , j=j , value=value )
+command_stack$add ( cmd )
+#############################
+DfModel$methods (
+  get_col_name = function ( j ) varnames [ j , 1 ] ,
+  get_col_names = function ( ) varnames [ , 1 ] ,
+  set_col_name = function ( j , value ) {
+    "Set name , return old"
+    old_col_name <- get_col_name ( j )
+    varnames [ j , 1 ] <<- value
+    old_col_name
+  } )
+
+
+
+
+
+
+</pre>

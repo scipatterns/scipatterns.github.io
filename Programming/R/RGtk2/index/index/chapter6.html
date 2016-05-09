@@ -1,0 +1,108 @@
+<pre>
+    library("RGtk2")
+# 6.1 Synopsis of the RGtk2 API ########################################################################################################################################################
+button <- gtkButton ( "Click Me" )
+button [ 'image' ] <- gtkImage ( stock = "gtk-apply" ,
+                                 size = "button" )
+gSignalConnect ( button , "clicked" , function ( button ) {
+  message ( "Hello World!" )
+} )
+##
+window <- gtkWindow ( show = FALSE )
+window$add ( button )
+window$showAll ( )
+
+
+
+# 6.2 Objects and classes ########################################################################################################################################################
+gTypeGetAncestors ( "GtkWidget" )
+gTypeGetInterfaces ( "GtkWidget" )
+
+
+# 6.3 Constructors ########################################################################################################################################################
+window <- gtkWindow ( "toplevel" , show = FALSE )
+gtkImage ( stock = "gtk-apply" , size = "button" )
+args ( gtkImage )
+
+gtkButtonSetLabel ( button , "New text" )
+gtkButtonGetLabel ( button )
+
+class ( window )
+
+interface ( window )
+
+
+# 6.4 Methods ########################################################################################################################################################
+
+button <- gtkButton ( "Hello World" )
+window$add ( button )
+window$setDefaultSize ( 200 , 200)
+
+gtkButtonSayHello <- function ( obj , target )
+  obj$setLabel ( paste ( "Hello" , target ) )
+button$sayHello ( "World" )
+button$getLabel ( )
+
+
+
+# 6.5 Properties ########################################################################################################################################################
+head ( names ( button ) , n = 8)
+image <- gdkPixbuf ( filename = imagefile ( "rgtk -logo.gif" ) )
+window$set ( icon = image [[ 1 ]] , title = "Hello World 1.0" )
+window$setTitle ( "Hello World 1.0" )
+window$getTitle ( )
+window [ "visible" ]
+window [ "visible" ] <- TRUE
+window$show ( ) # same e f f e c t
+
+
+
+# 6.6 Events and signals ########################################################################################################################################################
+names ( gTypeGetSignals ( "GtkButton" ) )
+args ( gSignalConnect )
+gSignalConnect ( button , "clicked" ,
+                 function ( button ) message ( "Hello World!" ) )
+######
+window <- gtkWindow ( ) ; window [ 'title' ] <- "test signals"
+x <- 1 ;
+button <- gtkButton ( "click me" ) ; window$add ( button )
+gSignalConnect ( button , signal = "clicked" ,
+                 f = function ( button ) {
+                   button$setData ( "x" , 2)
+                   x <- 2
+                   return ( TRUE )
+                 } )
+
+cat ( x , button$getData ( "x" ) , "\n" ) # 1 and 2
+################
+button <- gtkButton ( "click" )
+window <- gtkWindow ( )
+window$add ( button )
+gSignalConnect ( button , "button-press-event" ,
+                 function ( button , event , data ) {
+                   message ( "hi" ) ; return ( FALSE )
+                 } )
+gSignalConnect ( button , "button-press-event" ,
+                 function ( button , event , data ) {
+                   message ( "and" ) ; return ( TRUE )
+                 } )
+gSignalConnect ( button , "button-press-event" ,
+                 function ( button , event , data ) {
+                   message ( "bye" ) ; return ( TRUE )
+                 } )
+
+
+
+# 6.7 Enumerated types and flags ########################################################################################################################################################
+window <- gtkWindow ( "toplevel" , show = FALSE )
+GtkWindowType
+GtkWidgetFlags
+window$flags ( )
+( window$flags ( ) & GtkWidgetFlags [ "toplevel" ] ) > 0
+
+
+# 6.8 The event loop ########################################################################################################################################################
+while ( gtkEventsPending ( ) )
+  gtkMainIteration ( )
+
+</pre>

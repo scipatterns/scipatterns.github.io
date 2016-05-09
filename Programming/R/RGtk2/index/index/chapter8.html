@@ -1,0 +1,573 @@
+<pre>
+
+# 8.1 Buttons ##########################################################################################################################
+################################################# Example 8.1: Button constructors
+window <- gtkWindow ( show = FALSE )
+window$setTitle ( "Various buttons" )
+window$setDefaultSize (400 , 25)
+hbox <- gtkHBox ( homogeneous = FALSE , spacing = 5)
+window$add ( hbox )
+button <- gtkButtonNew ( )
+button$setLabel ( "long way" )
+hbox$packStart ( button )
+hbox$packStart ( gtkButton ( label = "label only" ) )
+hbox$packStart ( gtkButton ( stock . id = "gtk-ok" ) )
+hbox$packStart ( gtkButtonNewWithMnemonic ( "_Mnemonic" ) )
+window$show ( )
+################################################# Example 8.2: Callback example for gtkButton
+window <- gtkWindow ( ) ; button <- gtkButton ( "click me" ) ;
+window$add ( button )
+gSignalConnect ( button , "button -press -event" , # j u s t mouse
+                 f = function ( widget , event , data ) {
+                   print ( event$getButton ( ) ) # which b u t t o n
+                   return ( FALSE ) # p r o p a g a t e
+                 } )
+gSignalConnect ( button , "clicked" , # k e y b o a r d t o o
+                 f = function ( widget , . . . ) {
+                   print ( "clicked" )
+                 } )
+
+####
+button$setSensitive ( FALSE )
+################################################# Example 8.3: Spacing between buttons
+ok <- gtkButton ( stock . id="gtk-ok" )
+cancel <- gtkButton ( stock . id="gtk-cancel" )
+delete <- gtkButton ( stock . id="gtk-delete" )
+hbox$packEnd ( ok , padding = 0)
+hbox$packEnd ( cancel , padding = 12)
+hbox$packEnd ( delete , padding = 12)
+hbox$packEnd ( gtkLabel ( "" ) , expand = TRUE , fill = TRUE )
+##
+ok$grabFocus ( )
+# 8.2 Static text and images################################################################################################################
+################################################# Labels
+################################################# Example 8.4: Label formatting
+string <- "the quick brown fox jumped over the lazy dog"
+## wrap by s e t t i n g number o f c h a r a c t e r s
+basicLabel <- gtkLabel ( string )
+basicLabel$setLineWrap ( TRUE )
+basicLabel$setWidthChars ( 3 5 ) # no . c h a r a c t e r s
+## S e t e l l i p s i s t o s h o r t e n long t e x t
+ellipsized <- gtkLabel ( string )
+ellipsized$setEllipsize ( "middle" )
+## Right j u s t i f y t e x t l i n e s
+## use x a l i g n p r o p e r t y f o r a l i g n i n g e n t i r e b l o c k
+rightJustified <- gtkLabel ( "right justify" )
+rightJustified$setJustify ( "right" )
+rightJustified [ 'xalign' ] <- 1
+## PANGO markup
+pangoLabel <- gtkLabel ( )
+tmpl <- "<span foreground='blue ' size='x-small '>%s</span >"
+pangoLabel$setMarkup ( sprintf ( tmpl , string ) )
+#
+sapply ( list ( basicLabel , ellipsized , rightJustified , pangoLabel ) ,
+         vbox$packStart , expand = TRUE , fill = TRUE )
+window$showAll ( )
+################################################# Pango markup
+################################################# Images
+################################################# Example 8.5: Using a pixmap to present graphs
+window <- gtkWindow ( show = FALSE )
+window$setTitle ( "Graphic window" )
+window$setSizeRequest ( 4 0 0 , 400)
+hbox <- gtkHBox ( ) ; window$add ( hbox )
+window$showAll ( )
+####################
+theSize <- hbox$getAllocation ( ) $allocation
+width <- theSize$width ; height <- theSize$height
+#####################
+require ( cairoDevice )
+pixmap <- gdkPixmap ( drawable = NULL ,
+                      width = width , height = height , depth =24)
+asCairoDevice ( pixmap )
+hist ( rnorm ( 1 0 0 ) )
+#####################
+image <- gtkImage ( pixmap = pixmap )
+hbox$packStart ( image , expand = TRUE , fill = TRUE )
+################################################# Stock icons
+head ( unlist ( gtkStockListIds ( ) ) , n =3)
+# 8.3 Input controls####################################################################################################################
+################################################# Text entry
+entry <- gtkEntry ( )
+gSignalConnect ( entry , "activate" , function ( ) {
+  message ( "Text entered: " , entry$getText ( ) )
+} )
+################################################# The GtkEditable interface
+################################################# Advanced GtkEntry features
+validatedEntry <- gtkEntry ( )
+gSignalConnect ( validatedEntry , "changed" , function ( entry ) {
+  text <- entry$getText ( )
+  if ( nzchar ( gsub ( "[a-zA-Z]" , "" , text ) ) ) {
+    entry$setIconFromStock ( "primary" , "gtk-no" )
+    entry$setIconTooltipText ( "primary" ,
+                               "Only letters are allowed" )
+  } else {
+    entry$setIconFromStock ( "primary" , "gtk-yes" )
+    entry$setIconTooltipText ( "primary" , NULL )
+  }
+} )
+validatedEntry$setIconFromStock ( "primary" , "gtk-yes" )
+################################################# Check button
+checkButton <- gtkCheckButton ( "Option" )
+checkButton [ 'active' ]
+checkButton [ 'active' ] <- TRUE
+gSignalConnect ( checkButton , "toggled" , function ( button ) {
+  state <- ifelse ( button$active , "active" , "inactive" )
+  message ( "Button is " , state )
+} )
+################################################# Radio-button groups
+
+################################################# Example 8.6: Basic radio-button usage
+labels <- c ( "two.sided" , "less" , "greater" )
+radiogp <- list ( ) # l i s t f o r group
+radiogp [ [ labels [ 1 ] ] ] <- gtkRadioButton ( label=labels [ 1 ] )
+for ( label in labels [ ???1])
+  radiogp [ [ label ] ] <- gtkRadioButton ( radiogp , label=label )
+##############
+window <- gtkWindow ( ) ; window$setTitle ( "Radio group example" )
+vbox <- gtkVBox ( FALSE , 5 ) ; window$add ( vbox )
+sapply ( radiogp , gtkBoxPackStart , object = vbox )
+###############
+vbox [ [ 3 ] ] $setActive ( TRUE )
+sapply ( radiogp , ' [ ' , "active" )
+###################
+sapply ( radiogp , gSignalConnect , "toggled" , # c o n n e c t e a c h
+         f = function ( button , data ) {
+           if ( button [ 'active' ] ) # s e t b e f o r e c a l l b a c k
+             message ( "clicked" , button$getLabel ( ) , "\n" )
+         } )
+################################################# Example 8.7: Radio group via a FromWidget constructor
+radiogp <- gtkRadioButton ( label=labels [ 1 ] )
+btns <- sapply ( labels [ ???1] , gtkRadioButtonNewWithLabelFromWidget ,
+                 group = radiogp )
+window <- gtkWindow ( )
+window [ 'title' ] <- "Radio group example"
+vbox <- gtkVBox ( ) ; window$add ( vbox )
+sapply ( rev ( radiogp$getGroup ( ) ) , gtkBoxPackStart , object = vbox )
+################################################# Combo boxes
+combo <- gtkComboBoxNewText ( )
+sapply ( c ( "two.sided" , "less" , "greater" ) , combo$appendText )
+combo [ 'active' ]
+gSignalConnect ( combo , "changed" ,
+                 f = function ( button , . . . ) {
+                   if ( button$getActive ( ) < 0)
+                     message ( "No value selected" )
+                   else
+                     message ( "Value is" , button$getActiveText ( ) )
+                 } )
+################################################# Example 8.8: Using one combo box to populate another
+window <- gtkWindow ( show = FALSE )
+window$setTitle ( "gtkComboBox example" )
+df_combo <- gtkComboBoxNewText ( )
+var_combo <- gtkComboBoxNewText ( )
+####################
+vbox <- gtkVBox ( ) ; window$add ( vbox )
+#
+vbox1 <- gtkHBox ( ) ; vbox$packStart ( vbox1 )
+vbox1$packStart ( gtkLabel ( "Data frames:" ) )
+vbox1$packStart ( df_combo )
+#
+vbox2 <- gtkHBox ( ) ; vbox$packStart ( vbox2 )
+vbox2$packStart ( gtkLabel ( "Variable:" ) )
+vbox2$packStart ( var_combo )
+vbox2$hide ( )
+#########################
+sapply ( avail_dfs ( ) , df_combo$appendText )
+df_combo$setActive (???1)
+#
+gSignalConnect ( df_combo , "changed" , function ( df_combo , . . . ) {
+  var_combo$getModel ( ) $clear ( )
+  sapply ( find_vars ( df_combo$getActiveText ( ) ) ,
+           var_combo$appendText )
+  vbox2$show ( )
+} )
+################################################# Sliders and spin buttons
+
+################################################# Sliders
+
+################################################# Spin buttons
+
+################################################# Example 8.9: A range widget
+from <- 0 ; to <- 1 0 0 ; by <- 1
+slider <- gtkHScale ( min = from , max = to , step = by )
+slider [ 'draw -value' ] <- FALSE
+adjustment <- slider$getAdjustment ( )
+spinbutton <- gtkSpinButton ( adjustment = adjustment )
+###########################
+hbox <- gtkHBox ( )
+hbox$packStart ( slider , expand=TRUE , fill = TRUE , padding = 5)
+hbox$packStart ( spinbutton , expand = FALSE , padding = 5)
+# 8.4 Progress reporting################################################################################################################
+################################################# Progress bars
+window <- gtkWindow ( ) ; window$setTitle ( "Progress bar example" )
+progress_bar <- gtkProgressBar ( )
+window$add ( progress_bar )
+#
+progress_bar$setText ( "Please be patient..." )
+for ( i in 1 : 1 0 0 ) {
+  progress_bar$setFraction ( i/ 100)
+  Sys . sleep ( 0 . 0 5 ) ## r e p l a c e with a s t e p in t h e p r o c e s s
+}
+progress_bar$setText ( "All done." )
+progress_bar$pulse ( )
+################################################# Spinners
+spinner <- gtkSpinner ( )
+spinner$start ( )
+spinner$stop ( )
+# 8.5 Wizards##############################################################################################################################
+################################################# Signals
+
+################################################# Example 8.10: An install.packages wizard
+assistant <- gtkAssistant ( show=FALSE )
+assistant$setSizeRequest ( 5 0 0 , 500)
+gSignalConnect ( assistant , "cancel" ,
+                 function ( assistant ) assistant$destroy ( ) )
+##################
+pages <- lapply ( 1 : 5 , gtkVBox , spacing =5 , homogeneous = FALSE )
+page_types <- c ( "intro" , rep ( "confirm" , 3 ) , "summary" )
+sapply ( pages , gtkAssistantAppendPage , object = assistant )
+sapply ( pages , gtkAssistantSetPageType , object = assistant ,
+         type=page_types )
+###################
+image <- gdkPixbuf ( filename = imagefile ( "rgtk -logo.gif" ) ) [ [ 1 ] ]
+sapply ( pages , gtkAssistantSetPageSideImage , object=assistant ,
+         pixbuf = image )
+##################
+populate_page <- list ( )
+gSignalConnect ( assistant , "prepare" ,
+                 function ( assistant , page , data ) {
+                   page_no <- which ( sapply ( pages , identical , page ) )
+                   if ( !length ( page$getChildren ( ) ) )
+                     populate_page [ [ page_no ] ] ( )
+                 } )
+##################
+assistant$setForwardPageFunc ( function ( page_index , data ) {
+  if ( page_index == 0 && have_CRAN ( ) )
+    2L
+  else
+    as . integer ( page_index + 1)
+} , data=NULL )
+####################
+CRAN_package <- NA
+install_options <- list ( ) # type , d e p e n d e n c i e s , l i b
+######################
+populate_page [ [ 1 ] ] <- function ( ) {
+  assistant$setPageTitle ( pages [ [ 1 ] ] , "Install a CRAN package" )
+  pages [ [ 1 ] ] $packStart ( label <- gtkLabel ( ) )
+  pages [ [ 1 ] ] $packStart ( gtkLabel ( ) , expand=TRUE ) # a s p r i n g
+  label$setMarkup ( paste (
+    "<span font='x-large '>Install a CRAN package </span >" ,
+    "This wizard will help install a package from" ,
+    "<b>CRAN </b>. If you have not already specified a" ,
+    "CRAN repository , you will be prompted to do so." ,
+    sep="\n" ) )
+  assistant$setPageComplete ( pages [ [ 1 ] ] , TRUE )
+}
+######################
+populate_page [ [ 4 ] ] <- function ( ) {
+  assistant$setPageTitle ( pages [ [ 4 ] ] , "Install a CRAN package" )
+  ##
+  get_desc <- function ( pkgname ) {
+    o <- "http://cran.r-project.org/web/packages/%s/%s"
+    x <- readLines ( sprintf ( o , pkgname , "DESCRIPTION" ) )
+    f <- tempfile ( ) ; cat ( paste ( x , collapse="\n" ) , file=f )
+    read . dcf ( f )
+  }
+  desc <- get_desc ( CRAN_package )
+  #
+  label <- gtkLabel ( )
+  label$setLineWrap ( TRUE )
+  label$setWidthChars ( 4 0 )
+  label$setMarkup ( paste (
+    sprintf ( "Install package: <b>%s</b>" , desc [ 1 , 'Package' ] ) ,
+    "\n" ,
+    sprintf ( "%s" , gsub ( "\\n" , " " , desc [ 1 , 'Description' ] ) ) ,
+    sep="\n" ) )
+  pages [ [ 4 ] ] $packStart ( label )
+  ##
+  table <- gtkTable ( )
+  pages [ [ 4 ] ] $packStart ( table , expand=FALSE )
+  pages [ [ 4 ] ] $packStart ( gtkLabel ( ) , expand=TRUE )
+  ##
+  combo <- gtkComboBoxNewText ( )
+  pkg_types <- c ( "source" , "mac.binary" , "mac.binary.leopard" ,
+                   "win.binary" , "win64.binary" )
+  sapply ( pkg_types , combo$appendText )
+  combo$setActive ( which ( getOption ( "pkgType" ) == pkg_types )???1)
+  gSignalConnect ( combo , "changed" , function ( combo , . . . ) {
+    cur <- 1L + combo$getActive ( )
+    install_options [ [ 'type' ] ] <<- pkg_types [ cur ]
+  } )
+  table$attachDefaults ( gtkLabel ( "Package type:" ) , 0 , 1 , 0 , 1)
+  table$attachDefaults ( combo , 1 , 2 , 0 , 1)
+  ##
+  checkButton <- gtkCheckButton ( )
+  checkButton$setActive ( TRUE )
+  gSignalConnect ( checkButton , "toggled" , function ( ck_btn ) {
+    install_options$dependencies <<- ck_btn$getActive ( )
+  } )
+  table$attachDefaults ( gtkLabel ( "Install dependencies" ) ,
+                         0 , 1 , 1 , 2)
+  table$attachDefaults ( checkButton , 1 , 2 , 1 , 2)
+  ##
+  file_chooser <- gtkFileChooserButton ( "Select directory..." ,
+                                         "select -folder" )
+  file_chooser$setFilename ( . libPaths ( ) [ 1 ] )
+  gSignalConnect ( file_chooser , "selection -changed" ,
+                   function ( file_chooser ) {
+                     dir <- file_chooser$getFilename ( )
+                     install_options [ [ 'lib' ] ] <<- dir
+                   } )
+  table$attachDefaults ( gtkLabel ( "Where" ) , 0 , 1 , 2 , 3)
+  table$attachDefaults ( file_chooser , 1 , 2 , 2 , 3)
+  ## a l i g n l a b e l s t o r i g h t and s e t s p a c i n g
+  sapply ( table$getChildren ( ) , function ( child ) {
+    widget <- child$getWidget ( )
+    if ( is ( widget , "GtkLabel" ) ) widget [ 'xalign' ] <- 1
+  } )
+  table$setColSpacing (0 L , 5L )
+  ##
+  assistant$setPageComplete ( pages [ [ 4 ] ] , TRUE )
+}
+#########################
+populate_page [ [ 5 ] ] <- function ( ) {
+  assistant$setPageTitle ( pages [ [ 5 ] ] , "Done" )
+  install_options$pkgs <- CRAN_package
+  out <- try ( do . call ( "install.packages" , install_options ) ,
+               silent=TRUE )
+  label <- gtkLabel ( ) ; pages [ [ 5 ] ] $packStart ( label )
+  if ( !inherits ( out , "try-error" ) ) {
+    label$setMarkup ( sprintf ( "Package %s was installed." ,
+                                CRAN_package ) )
+  } else {
+    label$setMarkup ( paste ( sprintf ( "Package %s, failed install" ,
+                                        CRAN_package ) ,
+                              paste ( out , collapse="\n" ) ,
+                              sep="\n" ) )
+  }
+  assistant$setPageComplete ( pages [ [ 5 ] ] , FALSE )
+}
+#########################
+populate_page [ [ 1 ] ] ( )
+assistant$show ( )
+# 8.6 Embedding R graphics################################################################################################################
+
+library ( cairoDevice )
+device <- gtkDrawingArea ( )
+asCairoDevice ( device )
+##
+window <- gtkWindow ( show=FALSE )
+window$add ( device )
+window$showAll ( )
+plot ( mpg ~ hp , data = mtcars )
+################################################# Example 8.11: Printing R graphics
+print_op <- gtkPrintOperation ( )
+gSignalConnect ( print_op , "draw -page" ,
+                 function ( print_op , context , page_nr ) {
+                   asCairoDevice ( context )
+                   plot ( mpg ~ wt , data = mtcars )
+                 } )
+print_op$run ( action = "print -dialog" , parent = NULL )
+################################################# Example 8.12: The manipulate package in RGtk2
+manipulate ( ## e x p r e s s i o n
+  plot ( cars , xlim = c ( x . min , x . max ) , type = type ,
+         axes = axes , ann = label ) ,
+  ## c o n t r o l s
+  x . min = slider ( 0 , 1 5 ) ,
+  x . max = slider ( 1 5 , 30 , initial = 2 5 ) ,
+  type = picker ( "p" , "l" , "b" , "c" , "o" , "h" , "s" ) ,
+  axes = checkbox ( TRUE , label = "Draw Axes" ) ,
+  label = checkbox ( FALSE , label = "Draw Labels" )
+)
+####################
+Manipulate <- setRefClass ( "Manipulate" ,
+                            fields=list (
+                              . code="ANY" ,
+                              . controls="list"
+                            ) )
+#####################
+Manipulate$methods (
+  get_values = function ( ) {
+    sapply ( . controls ,
+             function ( control ) control$get_value ( ) ,
+             simplify=FALSE ) # r e t u r n a l i s t
+  } ,
+  change_handler = function ( . . . ) {
+    "Evaluate code with current values"
+    values <- get_values ( )
+    result <- withVisible ( eval ( . code , envir=values ) )
+    if ( result$visible ) {
+      eval ( print ( result$value ) )
+    }
+  } )
+#######################
+Manipulate$methods (
+  execute=function ( ) {
+    "Make the GUI"
+    window <- gtkWindow ( show=FALSE )
+    window$setTitle ( "ManipulateR" )
+    ## S e t up g r a p h i c d e v i c e
+    hpaned <- gtkHPaned ( )
+    window$add ( hpaned )
+    device <- gtkDrawingArea ( )
+    device$setSizeRequest ( 4 8 0 , 480)
+    asCairoDevice ( device )
+    hpaned$add ( device )
+    ## C o n t r o l s frame
+    frame <- gtkFrame ( "Controls" )
+    control_table <- gtkTableNew ( )
+    control_table$setHomogeneous ( FALSE )
+    control_table [ 'column -spacing' ] <- 10
+    ## i n s e r t h o r i z o n t a l s t r u t
+    control_table$attach ( strut <- gtkHBox ( ) , 1 , 2 , 0 , 1 ,
+                           xoptions="" , yoptions="shrink" )
+    strut$setSizeRequest ( 7 5 , ???1)
+    frame$add ( control_table )
+    hpaned$add ( frame )
+    ## add e a c h c o n t r o l
+    sapply ( . controls , function ( control ) {
+      control$make_gui ( cont=control_table ,
+                         handler =. self$change_handler )
+    } )
+    window$show ( )
+    change_handler ( ) # i n i t i a l
+  } )
+##########################
+Manipulate$methods (
+  initialize = function ( code , . . . ) {
+    controls <- resolveVariableArguments ( list ( . . . ) )
+    initFields ( . code = code ,
+                 . controls = controls )
+    validate_controls ( )
+    callSuper ( )
+  } )
+##########################
+manipulate <- function ( ' _expr ' , . . . ) {
+  manip <- Manipulate$new ( substitute ( ' _expr ' ) , . . . )
+  manip$execute ( )
+}
+##########################
+ManipulateControls <- setRefClass ( "ManipulateControls" ,
+                                    fields=list (
+                                      l="list" ,
+                                      widget = "ANY" ,
+                                      label="ANY" ,
+                                      initial="ANY"
+                                    ) )
+############################
+ManipulateControls$methods (
+  validate_inputs = function ( . . . ) {
+    "Validate input code"
+  } ,
+  get_value = function ( . . . ) {
+    "Get value of widget"
+  } )
+#########################
+ManipulateControls$methods ( make_gui = function ( cont ) {
+  "Create widget , then add to table"
+  ## c o n t a GtkTable i n s t a n c e
+  nrows <- cont [ 'n-rows' ]
+  label_widget <- gtkLabel ( label )
+  label_widget [ 'xalign' ] <- 1
+  cont$attach ( label_widget , 0 , 1 , nrows , nrows + 1 ,
+                xoptions = "shrink" , yoptions="shrink"
+  )
+  cont$attach ( widget , 1 , 2 , nrows , nrows + 1 ,
+                xoptions = c ( "expand" , "fill" ) ,
+                yoptions = "" )
+} )
+############################
+slider <- function ( min , max , initial = min , label=NULL ,
+                     step = ???1, ticks = TRUE ) {
+  Slider$new ( min , max , initial = initial , label = label ,
+               step = step , ticks = ticks )
+}
+##############################
+Slider <- setRefClass ( "Slider" ,
+                        contains = "ManipulateControls" )
+###############################
+Slider$methods (
+  initialize = function ( min , max , initial = min ,
+                          label = NULL , step = ???1, ticks = TRUE , . . . ) {
+    validate_inputs ( min , max , initial , step , ticks )
+    ## c r e a t e s l i d e r and r e t u r n i t
+    slider <- list ( type = 0 ,
+                     min = min ,
+                     max = max ,
+                     step = step ,
+                     ticks = ticks )
+    initFields ( l = slider , label = label ,
+                 initial = initial )
+    callSuper ( )
+  } )
+##############################
+Slider$methods (
+  make_gui = function ( cont , handler , . . . ) {
+    widget <<- gtkHScale ( min = l$min , max = l$max ,
+                           step = l$step )
+    widget$setValue ( initial )
+    gSignalConnect ( widget , "value -changed" , handler )
+    callSuper ( cont )
+  } ,
+  get_value = function ( ) {
+    as . numeric ( widget$getValue ( ) )
+  } )
+###############################
+Checkbox$methods (
+  initialize = function ( initial=FALSE , label= NULL ) {
+    validate_inputs ( initial , label )
+    checkbox <- list ( type = 2)
+    initFields ( l = checkbox , label = label ,
+                 initial = initial )
+    callSuper ( )
+  } ,
+  make_gui = function ( cont , handler , . . . ) {
+    widget <<- gtkCheckButton ( ) # no l a b e l
+    widget$setActive ( initial )
+    gSignalConnect ( widget , "toggled" , handler )
+    callSuper ( cont )
+  } ,
+  get_value = function ( ) widget [ 'active' ]
+)
+# 8.7 Drag-and-drop##########################################################################################################################
+################################################# Initiating a drag
+TARGET . TYPE . TEXT <- 80 # our enumeration
+TARGET . TYPE . PIXMAP <- 81
+widgetTargetTypes <-
+  list ( text = gtkTargetEntry ( "text/plain" , 0 ,
+                                 TARGET . TYPE . TEXT ) ,
+         pixmap = gtkTargetEntry ( "image/x-pixmap" , 0 ,
+                                   TARGET . TYPE . PIXMAP ) )
+########################
+window <- gtkWindow ( ) ; window [ 'title' ] <- "Drag Source"
+drag_source_widget <- gtkButton ( "Text to drag" )
+window$add ( drag_source_widget )
+gtkDragSourceSet ( drag_source_widget ,
+                   start . button . mask=c ( "button1 -mask" , "button3 -mask" ) ,
+                   targets=widgetTargetTypes [ [ "text" ] ] ,
+                   actions="copy" )
+######################
+gSignalConnect ( drag_source_widget , "drag -data -get" ,
+                 function ( widget , context , sel , tType , eTime ) {
+                   sel$setText ( widget$getLabel ( ) )
+                 } )
+################################################# Handling drops
+window <- gtkWindow ( ) ; window [ 'title' ] <- "Drop Target"
+drop_target_widget <- gtkButton ( "Drop here" )
+window$add ( drop_target_widget )
+gtkDragDestSet ( drop_target_widget ,
+                 flags="all" ,
+                 targets=widgetTargetTypes [ [ "text" ] ] ,
+                 actions="copy" )
+########################
+
+gSignalConnect ( drop_target_widget , "drag -data -received" ,
+                 function ( widget , context , x , y , sel , tType , eTime ) {
+                   dropdata <- sel$getText ( )
+                   widget$setLabel ( rawToChar ( dropdata ) )
+                 } )
+
+
+
+
+
+</pre>
