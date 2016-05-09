@@ -4,33 +4,7 @@
     app.controller("myCtrl", function ($scope) {
 
 
-        $scope.top_dir = {
-            "Math": {
-                "Calculus": {}
-            },
-            "Statistics": {
-                "Math 5080": {}
-            },
-            "Programming": {
-                "Python": {},
-                "R": {
-                    "RGtk2": {
-                        "basic": {
-                            "button": "basic/button.html",
-                            "Window": "basic/window.html"}
-                    }
-                },
-                "SAS": {},
-                "SPSS": {},
-                "Excel": {}
-            },
-            "Work": {
-                "Time": {},
-                "Projects": {},
-                "Notes": {}
-            }
-
-        };
+        $scope.top_dir =tree;
 
 
         $scope.active_1 = "Home";
@@ -38,6 +12,7 @@
         $scope.package_active = false;
         $scope.topic_active = false;
         $scope.sub_topic_active = false;
+        $scope.base_active = false;
 
 
         $scope.active_1_set = function (file_name) {
@@ -46,6 +21,7 @@
             $scope.package_active = false;
             $scope.topic_active = false;
             $scope.sub_topic_active = false;
+            $scope.base_active = false;
 
 
         };
@@ -55,6 +31,7 @@
             $scope.package_active = false;
             $scope.topic_active = false;
             $scope.sub_topic_active = false;
+            $scope.base_active = false;
 
 
         };
@@ -63,17 +40,25 @@
             $scope.package_active = file_name;
             $scope.topic_active = false;
             $scope.sub_topic_active = false;
+            $scope.base_active = false;
 
 
         };
         $scope.active_topic_set = function (file_name) {
             $scope.topic_active = file_name;
             $scope.sub_topic_active = false;
+            $scope.base_active = false;
 
 
         };
         $scope.active_sub_topic_set = function (file_name) {
             $scope.sub_topic_active = file_name;
+            $scope.base_active = false;
+
+
+        };
+        $scope.active_base_set = function (file_name) {
+            $scope.base_active = file_name;
 
 
         };
