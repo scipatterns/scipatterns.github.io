@@ -1,0 +1,55 @@
+9.5 Sharing buffers between text entries
+As of GTK+ version 2.18, multiple instances of GtkEntry can synchronize
+their text through a shared buffer. Each entry obtains its text from the same
+underlying model, a GtkEntryBuffer. Here, we construct two entries, with
+a shared buffer:
+<pre>
+buffer <- gtkEntryBuffer ( )
+entry1 <- gtkEntry ( buffer = buffer )
+entry2 <- gtkEntry ( buffer = buffer )
+entry1$setText ( "echo" )
+entry2$getText ( )
+[1] " echo "
+</pre>
+The change of text in "entry1" has been reflected in "entry2".
+<br>
+9.6 Text views
+Multiline text areas are displayed through GtkTextView instances. These
+provide a view of an accompanying GtkTextBuffer, which is the model
+that stores the text and other objects to be rendered. The view is responsible
+for the display of the text in the buffer and has methods for adjusting
+tabs, margins, indenting, etc. The text buffer stores the actual text, and its
+methods are for adding and manipulating the text.
+<br>
+A text view is created with gtkTextView. The underlying text buffer can
+be passed to the constructor. Otherwise, a buffer is automatically created.
+This buffer is returned by the method getBuffer and can be set with the
+setBuffer method. Text views provide native scrolling support and thus
+are easily added to a scrolled window (Section 7.4).
+<br>
+Example 9.10: Basic gtkTextView usage
+The steps to construct a text view consist of
+<pre>
+view <- gtkTextView ( )
+scrolled_window <- gtkScrolledWindow ( )
+scrolled_window$add ( view )
+scrolled_window$setPolicy ( "automatic" , "automatic" )
+##
+window <- gtkWindow ( )
+window [ ’border -width’ ] <- 15
+window$add ( scrolled_window )
+    </pre>
+To set all the text in the buffer requires accessing the underlying buffer:
+<pre>
+buffer <- view$getBuffer ( )
+buffer$setText ( "Lorem ipsum dolor sit amet ..." )
+    </pre>
+Manipulating the text requires an understanding of how positions are
+referred to within the buffer (iterators or marks). As an indicator, to get
+the contents of the buffer can be done as follows:
+    <pre>
+start <- buffer$getStartIter ( ) $iter
+end <- buffer$getEndIter ( ) $iter
+buffer$getText ( start , end )
+[1] " Lorem ipsum dolor sit amet ..."
+        </pre>
